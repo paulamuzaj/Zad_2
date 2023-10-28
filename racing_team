@@ -1,0 +1,109 @@
+#include <iostream>
+
+using namespace std;
+
+#include <iostream>
+#include <fstream>
+#include <vector>
+
+struct Point {
+    double x, y;
+
+    Point(double x, double y) : x(x), y(y) {}
+};
+
+// Funkcja do obliczania otoczki wypukłej algorytmem Jarvisa
+
+std::vector<Point> convexHullJarvis(std::vector<Point>& points) 
+{
+    int n = points.size();
+    if (n < 3) 
+    {
+        std::cerr << "Za mało punktów, aby obliczyć otoczkę wypukłą." << std::endl;
+        exit(1);
+    }
+
+    std::vector<Point> convexHull;
+
+    // Szukanie punktu o najniższej współrzędnej y i najbardziej na lewo jako punkt początkowy.
+    int startPoint = 0;
+    for (int i = 1; i < n; i++) 
+    {
+        if (points[i].y < points[startPoint].y || (points[i].y == points[startPoint].y && points[i].x < points[startPoint].x)) 
+	{
+            startPoint = i;
+        }
+    }
+
+    int currentPoint = startPoint;
+    do 
+    {
+        convexHull.push_back(points[currentPoint]);
+        int nextPoint = (currentPoint + 1) % n;
+        for (int i = 0; i < n; i++) 
+	{
+            if (i != currentPoint) 
+	    {
+                int orientation = (points[i].x - points[currentPoint].x) * (points[nextPoint].y - points[currentPoint].y) -
+                                   (points[nextPoint].x - points[currentPoint].x) * (points[i].y - points[currentPoint].y);
+                if (orientation > 0 || (orientation == 0 && (points[i].x - points[currentPoint].x) * (points[i].x - points[currentPoint].x) +
+                                                      (points[i].y - points[currentPoint].y) * (points[i].y - points[currentPoint].y) >
+                                                      (points[nextPoint].x - points[currentPoint].x) * (points[nextPoint].x - points[currentPoint].x) +
+                                                      (points[nextPoint].y - points[currentPoint].y) * (points[nextPoint].y - points[currentPoint].y))) 
+		{
+                    nextPoint = i;
+                }
+            }
+        }
+        currentPoint = nextPoint;
+    } while (currentPoint != startPoint);
+
+    return convexHull;
+}
+
+int main(int argc, char* argv[]) 
+{
+    if (argc != 2) 
+    {
+        std::cerr << "Sposób użycia: " << argv[0] << " <nazwa_pliku>" << std::endl;
+        return 1;
+    }
+
+    std::string filename = argv[1];
+    std::ifstream file(filename);
+
+    if (!file.is_open()) 
+    {
+        std::cerr << "Nie można otworzyć pliku." << std::endl;
+        return 1;
+    }
+
+    int n;
+    file >> n;
+    std::vector<Point> points;
+
+    for (int i = 0; i < n; i++) 
+    {
+        double x, y;
+        file >> x >> y;
+        points.push_back(Point(x, y));
+    }
+
+    file.close();
+
+    std::vector<Point> convexHullPoints = convexHullJarvis(points);
+
+    // Wypisz punkty tworzące otoczkę.
+    std::cout << "[";
+    for (int i = 0; i < convexHullPoints.size(); i++) 
+    {
+        std::cout << "(" << convexHullPoints[i].x << ", " << convexHullPoints[i].y << ")";
+        if (i < convexHullPoints.size() - 1) 
+	{
+            std::cout << ", ";
+        }
+    }
+    std::cout << "]" << std::endl;
+
+    return 0;
+}
